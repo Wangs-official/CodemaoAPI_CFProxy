@@ -1,9 +1,7 @@
+// FXXK LTC NM$L
 export async function onRequest(context) {
   const { request, params } = context;
 
-  /* =========================
-   * 1️⃣ 根路径默认页面
-   * ========================= */
   if (!params.path || params.path.length === 0) {
     return new Response(
       `<!DOCTYPE html>
@@ -42,58 +40,62 @@ export async function onRequest(context) {
       {
         status: 200,
         headers: {
-          "content-type": "text/html; charset=utf-8",
+          "Content-Type": "text/html; charset=utf-8",
         },
       }
     );
   }
+
   const targetBase = "https://api.codemao.cn";
   const incomingUrl = new URL(request.url);
-
-  const targetUrl = new URL(
-    `${targetBase}/${params.path.join("/")}`
-  );
+  const targetUrl = new URL(`${targetBase}/${params.path.join("/")}`);
   targetUrl.search = incomingUrl.search;
+
   const headers = new Headers();
   headers.set(
     "User-Agent",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-      "AppleWebKit/537.36 (KHTML, like Gecko) " +
-      "Chrome/121.0.0.0 Safari/537.36"
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
   );
   headers.set("Accept", "application/json, text/plain, */*");
   headers.set("Accept-Language", "zh-CN,zh;q=0.9");
   headers.set("Referer", "https://codemao.cn/");
   headers.set("Origin", "https://codemao.cn");
+
   const cookie = request.headers.get("cookie");
-  if (cookie) {
-    headers.set("Cookie", cookie);
-  }
+  if (cookie) headers.set("Cookie", cookie);
+
   const authorization = request.headers.get("authorization");
-  if (authorization) {
-    headers.set("Authorization", authorization);
-  }
+  if (authorization) headers.set("Authorization", authorization);
+
   const contentType = request.headers.get("content-type");
-  if (contentType) {
-    headers.set("Content-Type", contentType);
-  }
+  if (contentType) headers.set("Content-Type", contentType);
+
   let body = null;
   if (!["GET", "HEAD"].includes(request.method)) {
     body = await request.text();
   }
+
   const proxyRequest = new Request(targetUrl.toString(), {
     method: request.method,
     headers,
     body,
     redirect: "manual",
   });
+
   const response = await fetch(proxyRequest);
-  const newHeaders = new Headers(response.headers);
-  newHeaders.delete("content-encoding");
-  newHeaders.delete("content-length");
+
+  const newHeaders = new Headers();
+  newHeaders.set("Content-Type", "application/json;charset=UTF-8");
+  newHeaders.set("Vary", "Accept-Encoding");
+  newHeaders.set(
+    "Strict-Transport-Security",
+    "max-age=15724800; includeSubDomains"
+  );
+  newHeaders.set("Connection", "keep-alive");
+  newHeaders.set("Date", new Date().toUTCString());
+
   return new Response(response.body, {
     status: response.status,
-    statusText: response.statusText,
     headers: newHeaders,
   });
 }
